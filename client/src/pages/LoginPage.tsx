@@ -216,7 +216,7 @@ export default function LoginPage() {
           className="h-full"
           style={{
             backgroundImage:
-              "url('https://images.unsplash.com/photo-1612015670817-0127d21628d4?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1920&h=1200')",
+              "url('https://images.unsplash.com/photo-1619134778706-7015533a6150?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1920&h=1200')",
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
