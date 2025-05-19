@@ -24,7 +24,7 @@ const initialState = {
 // Async thunks
 export const fetchWatches = createAsyncThunk(
   'watches/fetchWatches',
-  async (filters?: Partial<WatchFilters>, { rejectWithValue }) => {
+  async (filters: Partial<WatchFilters> | undefined, { rejectWithValue }) => {
     try {
       // Build query string from filters
       let queryParams = '';
@@ -101,7 +101,7 @@ export const createWatch = createAsyncThunk(
   'watches/createWatch',
   async (watchData: WatchFormData, { rejectWithValue }) => {
     try {
-      const response = await apiRequest('POST', '/api/admin/watches', watchData);
+      const response = await apiRequest('POST', '/api/watches', watchData);
       return await response.json();
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to create watch');
@@ -113,7 +113,7 @@ export const updateWatch = createAsyncThunk(
   'watches/updateWatch',
   async ({ id, data }: { id: number, data: Partial<WatchFormData> }, { rejectWithValue }) => {
     try {
-      const response = await apiRequest('PUT', `/api/admin/watches/${id}`, data);
+      const response = await apiRequest('PUT', `/api/watches/${id}`, data);
       return await response.json();
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to update watch');
@@ -125,7 +125,7 @@ export const deleteWatch = createAsyncThunk(
   'watches/deleteWatch',
   async (id: number, { rejectWithValue }) => {
     try {
-      await apiRequest('DELETE', `/api/admin/watches/${id}`);
+      await apiRequest('DELETE', `/api/watches/${id}`);
       return id;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to delete watch');

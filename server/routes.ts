@@ -76,8 +76,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Admin routes for watches CRUD
-  app.post("/api/admin/watches", isAuthenticated, isAdmin, async (req, res) => {
+  // Watch creation route (will also be used by admin)
+  app.post("/api/watches", isAuthenticated, async (req, res) => {
     try {
       const watchData = validateRequest(insertWatchSchema, req, res);
       if (!watchData) return;
@@ -90,7 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put("/api/admin/watches/:id", isAuthenticated, isAdmin, async (req, res) => {
+  app.put("/api/watches/:id", isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -117,7 +117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.delete("/api/admin/watches/:id", isAuthenticated, isAdmin, async (req, res) => {
+  app.delete("/api/watches/:id", isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
