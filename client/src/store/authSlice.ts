@@ -38,12 +38,46 @@ export const register = createAsyncThunk(
 
 export const googleLogin = createAsyncThunk(
   'auth/googleLogin',
-  async (credentials: GoogleLoginCredentials, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await apiRequest('POST', '/api/auth/google', credentials);
+      // Import auth functions dynamically to avoid circular dependencies
+      const { auth, googleProvider } = await import('@/lib/firebase');
+      const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
+      
+      // Sign in with Google popup
+      const result = await signInWithPopup(auth, googleProvider);
+      
+      // Get the Google ID token and user info
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = result.user.uid || credential?.accessToken; // Use UID as preferred token
+      const email = result.user.email;
+      
+      if (!token || !email) {
+        return rejectWithValue('Google authentication failed: Missing user information');
+      }
+      
+      // Send the token to our backend to create/authenticate the user
+      const response = await apiRequest('POST', '/api/auth/google', {
+        token,
+        email
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        return rejectWithValue(`Server error: ${errorData.message || 'Unknown error'}`);
+      }
+      
       return await response.json();
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to login with Google');
+    } catch (error: any) {
+      // Handle Firebase auth errors
+      if (error.code === 'auth/popup-closed-by-user') {
+        return rejectWithValue('Google sign-in was cancelled');
+      }
+      if (error.code === 'auth/popup-blocked') {
+        return rejectWithValue('Pop-up was blocked by your browser. Please allow pop-ups for this site.');
+      }
+      console.error('Google login error:', error);
+      return rejectWithValue(error.message || 'Failed to login with Google');
     }
   }
 );

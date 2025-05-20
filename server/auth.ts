@@ -139,44 +139,56 @@ export async function login(req: Request, res: Response) {
   }
 }
 
-// Google login handler (simplified without actual OAuth implementation)
+// Google login handler
 export async function googleLogin(req: Request, res: Response) {
   try {
-    // In a real implementation, we would verify the token with Google
-    // and extract user information. For this example, we'll assume
-    // the token is the Google ID and email is provided.
-    const { token } = req.body;
-    const email = req.body.email;
+    // Validate the request
+    const googleData = validateRequest(googleLoginSchema, req, res);
+    if (!googleData) return;
     
+    const { token, email } = googleData;
+    
+    console.log('Google login attempt for:', email);
+
+    // In a production app, we would verify the Google token here with Firebase Admin SDK
+    // For this implementation, we're trusting the client-side Firebase authentication
+
     if (!token || !email) {
       return res.status(400).json({ message: 'Invalid Google authentication data' });
     }
 
-    // Check if user exists
+    // First check if user exists by Google ID
     let user = await storage.getUserByGoogleId(token);
     
     if (!user) {
-      // Check if email exists but not linked to Google
+      // Check if user exists by email but without Google ID
       user = await storage.getUserByEmail(email);
       
       if (user) {
-        // Link Google ID to existing account
+        // Update existing user to link Google ID
+        console.log('Linking Google ID to existing user:', user.id);
         user = await storage.updateUser(user.id, { googleId: token }) || user;
       } else {
-        // Create new user
+        // Create new user with Google authentication
+        console.log('Creating new user with Google authentication');
         user = await storage.createUser({
           username: email.split('@')[0],
           email,
           googleId: token,
           role: 'dealer',
-          password: null,
-        } as InsertUser);
+          // Add a random password for security (not used for login)
+          password: await hash(Math.random().toString(36).slice(-10), 10),
+        });
       }
+    } else {
+      console.log('User found by Google ID:', user.id);
     }
 
     // Set up session
     req.session.userId = user.id;
     req.session.role = user.role;
+    
+    console.log('Google login successful. Session:', { userId: req.session.userId, role: req.session.role });
 
     // Return user
     const { password: _, ...userWithoutPassword } = user;

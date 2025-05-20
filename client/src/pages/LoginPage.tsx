@@ -57,7 +57,7 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     try {
-      await dispatch(googleLogin()).unwrap();
+      await dispatch(googleLogin(undefined)).unwrap();
     } catch (err) {
       console.error('Google login error:', err);
       toast({
