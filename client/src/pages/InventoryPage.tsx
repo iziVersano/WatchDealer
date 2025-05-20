@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch } from '@/store/store';
-import { fetchWatches, selectFilteredWatches } from '@/store/watchSlice';
+import { fetchWatches, fetchFavorites, selectFilteredWatches, selectFavorites, selectIsWatchesFavorite } from '@/store/watchSlice';
+import { selectIsAuthenticated } from '@/store/authSlice';
 import { Watch } from '@/types';
 import WatchCard from '@/components/WatchCard';
 import FilterSection from '@/components/FilterSection';
@@ -10,13 +11,23 @@ import { Button } from '@/components/ui/button';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatPrice } from '@/lib/utils';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function InventoryPage() {
   const dispatch = useDispatch<AppDispatch>();
   const watches = useSelector(selectFilteredWatches);
+  const favorites = useSelector(selectFavorites);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   const [loading, setLoading] = useState(true);
   const [selectedWatch, setSelectedWatch] = useState<Watch | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortOption, setSortOption] = useState<string>("default");
   const watchesPerPage = 8;
 
   useEffect(() => {
@@ -24,6 +35,9 @@ export default function InventoryPage() {
       setLoading(true);
       try {
         await dispatch(fetchWatches()).unwrap();
+        if (isAuthenticated) {
+          await dispatch(fetchFavorites()).unwrap();
+        }
       } catch (error) {
         console.error('Failed to fetch watches:', error);
       } finally {
@@ -32,7 +46,7 @@ export default function InventoryPage() {
     };
 
     loadWatches();
-  }, [dispatch]);
+  }, [dispatch, isAuthenticated]);
 
   const handleViewDetails = (watch: Watch) => {
     setSelectedWatch(watch);
@@ -42,11 +56,40 @@ export default function InventoryPage() {
     setSelectedWatch(null);
   };
 
+  // Handle sort change
+  const handleSortChange = (value: string) => {
+    setSortOption(value);
+    setCurrentPage(1); // Reset to first page when sorting changes
+  };
+
+  // Sort watches based on sort option
+  const sortWatches = (watchesToSort: Watch[]) => {
+    switch (sortOption) {
+      case "price-asc":
+        return [...watchesToSort].sort((a, b) => a.price - b.price);
+      case "price-desc":
+        return [...watchesToSort].sort((a, b) => b.price - a.price);
+      case "favorites":
+        if (!isAuthenticated) return watchesToSort;
+        // Put favorites first, then other watches
+        return [...watchesToSort].sort((a, b) => {
+          const aIsFavorite = favorites.some(f => f.id === a.id);
+          const bIsFavorite = favorites.some(f => f.id === b.id);
+          if (aIsFavorite && !bIsFavorite) return -1;
+          if (!aIsFavorite && bIsFavorite) return 1;
+          return 0;
+        });
+      default:
+        return watchesToSort;
+    }
+  };
+
   // Pagination logic
+  const sortedWatches = sortWatches(watches);
   const indexOfLastWatch = currentPage * watchesPerPage;
   const indexOfFirstWatch = indexOfLastWatch - watchesPerPage;
-  const currentWatches = watches.slice(indexOfFirstWatch, indexOfLastWatch);
-  const totalPages = Math.ceil(watches.length / watchesPerPage);
+  const currentWatches = sortedWatches.slice(indexOfFirstWatch, indexOfLastWatch);
+  const totalPages = Math.ceil(sortedWatches.length / watchesPerPage);
 
   const paginate = (pageNumber: number) => {
     if (pageNumber > 0 && pageNumber <= totalPages) {
@@ -65,7 +108,32 @@ export default function InventoryPage() {
         </p>
       </div>
 
-      <FilterSection />
+      <div className="mb-8">
+        <FilterSection />
+        
+        <div className="mt-6 flex justify-between items-center">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            {watches.length} watches found
+          </p>
+          
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-neutral-600 dark:text-neutral-400">Sort by:</span>
+            <Select value={sortOption} onValueChange={handleSortChange}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Default" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Default</SelectItem>
+                <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                {isAuthenticated && (
+                  <SelectItem value="favorites">Favorites First</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

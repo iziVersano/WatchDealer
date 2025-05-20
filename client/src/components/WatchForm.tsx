@@ -41,10 +41,17 @@ interface WatchFormProps {
 }
 
 // Brand options
-const BRANDS = ['Rolex', 'Patek Philippe', 'Omega', 'Audemars Piguet', 'Cartier', 'Jaeger-LeCoultre', 'IWC', 'Breitling', 'Tag Heuer', 'Longines'];
+const BRANDS = [
+  'Rolex', 'Patek Philippe', 'Audemars Piguet', 'Omega', 'Cartier',
+  'IWC', 'Jaeger-LeCoultre', 'Tudor', 'Grand Seiko', 'Vacheron Constantin',
+  'Breitling', 'Tag Heuer', 'Longines', 'Zenith', 'Panerai'
+];
 
 // Material options
-const MATERIALS = ['Stainless Steel', 'Yellow Gold', 'Rose Gold', 'White Gold', 'Titanium', 'Ceramic', 'Platinum', 'Bronze', 'Carbon Fiber'];
+const MATERIALS = [
+  'Steel', 'Titanium', 'Yellow Gold', 'Rose Gold', 'White Gold',
+  'Platinum', 'Two-Tone', 'Ceramic', 'Carbon Fiber'
+];
 
 export default function WatchForm({ watch, onSubmit, isSubmitting }: WatchFormProps) {
   const [imagePreview, setImagePreview] = useState(watch?.imageUrl || "");
@@ -143,14 +150,24 @@ export default function WatchForm({ watch, onSubmit, isSubmitting }: WatchFormPr
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Size (mm)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="40"
-                      {...field}
-                      disabled={isSubmitting}
-                    />
-                  </FormControl>
+                  <Select
+                    onValueChange={(value) => field.onChange(parseInt(value))}
+                    defaultValue={field.value.toString()}
+                    disabled={isSubmitting}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select size" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {[36, 38, 39, 40, 41, 42, 44, 45].map((size) => (
+                        <SelectItem key={size} value={size.toString()}>
+                          {size}mm
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
