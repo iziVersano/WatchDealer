@@ -88,6 +88,7 @@ export type LoginCredentials = z.infer<typeof loginSchema>;
 // Google login schema
 export const googleLoginSchema = z.object({
   token: z.string(),
+  email: z.string().email(),
 });
 
 export type GoogleLoginCredentials = z.infer<typeof googleLoginSchema>;

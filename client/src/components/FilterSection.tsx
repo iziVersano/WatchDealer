@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
   addBrandFilter, 
@@ -9,7 +9,8 @@ import {
   removeMaterialFilter, 
   setPriceRange, 
   clearFilters, 
-  selectFilters, 
+  selectFilters,
+  selectWatches, 
   applyFilters,
   fetchWatches 
 } from '@/store/watchSlice';
@@ -17,23 +18,30 @@ import { AppDispatch } from '@/store/store';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { X, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 
 // Brand options
-const BRANDS = ['Rolex', 'Patek Philippe', 'Omega', 'Audemars Piguet', 'Cartier'];
+const BRANDS = [
+  'Rolex', 'Patek Philippe', 'Audemars Piguet', 'Omega', 'Cartier', 
+  'IWC', 'Jaeger-LeCoultre', 'Tudor', 'Grand Seiko', 'Vacheron Constantin'
+];
 
 // Size options
-const SIZES = [36, 38, 40, 42];
+const SIZES = [36, 38, 39, 40, 41, 42, 44, 45];
 
 // Material options
-const MATERIALS = ['Stainless Steel', 'Yellow Gold', 'Rose Gold', 'White Gold', 'Titanium'];
+const MATERIALS = [
+  'Steel', 'Titanium', 'Yellow Gold', 'Rose Gold', 'White Gold', 
+  'Platinum', 'Two-Tone', 'Ceramic', 'Carbon Fiber'
+];
 
 // Price range options
 const PRICE_RANGES: Array<[number, number]> = [
@@ -47,12 +55,46 @@ const PRICE_RANGES: Array<[number, number]> = [
 export default function FilterSection() {
   const dispatch = useDispatch<AppDispatch>();
   const filters = useSelector(selectFilters);
+  const watches = useSelector(selectWatches);
+  
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<string[]>([]);
   
   // Dropdown states
   const [brandOpen, setBrandOpen] = useState(false);
   const [sizeOpen, setSizeOpen] = useState(false);
   const [materialOpen, setMaterialOpen] = useState(false);
   const [priceOpen, setPriceOpen] = useState(false);
+  
+  // Handle search functionality
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setSearchResults([]);
+      return;
+    }
+    
+    const term = searchTerm.toLowerCase();
+    
+    // Search in watch brand, model, reference
+    const results = watches
+      .filter(watch => 
+        watch.brand.toLowerCase().includes(term) || 
+        watch.model.toLowerCase().includes(term) || 
+        watch.reference.toLowerCase().includes(term)
+      )
+      .map(watch => `${watch.brand} ${watch.model} ${watch.reference}`)
+      .slice(0, 5); // Limit to 5 results
+    
+    // Remove duplicates manually without using Set
+    const uniqueResults: string[] = [];
+    results.forEach(result => {
+      if (!uniqueResults.includes(result)) {
+        uniqueResults.push(result);
+      }
+    });
+    setSearchResults(uniqueResults);
+  }, [searchTerm, watches]);
 
   const handleClearFilters = () => {
     dispatch(clearFilters());
@@ -153,6 +195,49 @@ export default function FilterSection() {
             >
               Clear all filters
             </Button>
+          )}
+        </div>
+        
+        {/* Search Bar */}
+        <div className="relative mb-6">
+          <div className="flex items-center border rounded-md overflow-hidden focus-within:ring-1 focus-within:ring-primary">
+            <Search className="h-4 w-4 mx-3 text-neutral-500" />
+            <Input
+              type="text"
+              placeholder="Search by brand, model, or reference..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+          </div>
+          
+          {/* Search Results */}
+          {searchResults.length > 0 && (
+            <div className="absolute z-10 mt-1 w-full rounded-md bg-white dark:bg-neutral-800 shadow-lg">
+              <ul className="py-1 overflow-auto text-base divide-y divide-neutral-200 dark:divide-neutral-700">
+                {searchResults.map((result, index) => (
+                  <li 
+                    key={index}
+                    className="px-4 py-2 cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                    onClick={() => {
+                      // Parse result to extract brand
+                      const brand = result.split(' ')[0];
+                      if (!filters.brand.includes(brand)) {
+                        dispatch(addBrandFilter(brand));
+                        dispatch(applyFilters());
+                        dispatch(fetchWatches({
+                          ...filters,
+                          brand: [...filters.brand, brand]
+                        }));
+                      }
+                      setSearchTerm('');
+                    }}
+                  >
+                    {result}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
 
