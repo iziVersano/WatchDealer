@@ -55,14 +55,17 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // This is a simplified version. In reality, we would use a proper OAuth flow
-    // with Google's authentication services. For now, we'll just simulate it.
-    toast({
-      title: 'Google login',
-      description: 'Google login is not implemented in this demo.',
-      variant: 'destructive',
-    });
+  const handleGoogleLogin = async () => {
+    try {
+      await dispatch(googleLogin()).unwrap();
+    } catch (err) {
+      console.error('Google login error:', err);
+      toast({
+        title: 'Login failed',
+        description: 'Failed to log in with Google. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const toggleAuthMode = () => {
