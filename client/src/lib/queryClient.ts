@@ -7,8 +7,9 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-// Get the API URL from environment variables
-const API_URL = import.meta.env.VITE_API_URL || '';
+// Get the API URL from environment variables or use the current origin for development
+const API_URL = import.meta.env.VITE_API_URL || 
+  (typeof window !== 'undefined' ? window.location.origin : '');
 
 export async function apiRequest(
   method: string,
