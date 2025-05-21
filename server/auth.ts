@@ -31,18 +31,22 @@ export function validateRequest<T>(schema: z.ZodType<T>, req: Request, res: Resp
 export function configureSession(app: any) {
   const MemoryStoreSession = MemoryStore(session);
   
+  // Create a more memory-efficient session store config
   app.use(
     session({
       store: new MemoryStoreSession({
-        checkPeriod: 86400000 // 24 hours
+        checkPeriod: 86400000, // 24 hours
+        // Limit max size to prevent memory leaks
+        max: 100, // Limit to 100 sessions total
+        ttl: 60 * 60 * 1000 // 1 hour TTL for session cleanup
       }),
       secret: process.env.SESSION_SECRET || 'watch-dealer-secret',
       resave: false,
-      saveUninitialized: false,
+      saveUninitialized: false, // Don't create session until something stored
       cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+        maxAge: 1000 * 60 * 60 * 24, // 1 day (reduced from 1 week)
       },
     })
   );

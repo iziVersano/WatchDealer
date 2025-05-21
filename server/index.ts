@@ -21,6 +21,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Add extra CORS headers for preflight requests
+// Optimize server performance with memory-efficient middleware
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', 'https://watchdealer-client.onrender.com');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -31,31 +32,40 @@ app.use((req, res, next) => {
     return res.status(200).end();
   }
   
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  // Only track performance metrics in development
+  if (process.env.NODE_ENV === 'development') {
+    const start = Date.now();
+    const path = req.path;
+    let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+    const originalResJson = res.json;
+    res.json = function (bodyJson, ...args) {
+      // Only capture response in development mode to save memory
+      if (process.env.NODE_ENV === 'development') {
+        capturedJsonResponse = bodyJson;
       }
+      return originalResJson.apply(res, [bodyJson, ...args]);
+    };
 
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
+    res.on("finish", () => {
+      const duration = Date.now() - start;
+      if (path.startsWith("/api")) {
+        let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+        if (capturedJsonResponse) {
+          // Only include response in logs for development
+          // Use a simplified version to reduce memory usage
+          if (typeof capturedJsonResponse === 'object' && capturedJsonResponse !== null) {
+            const keys = Object.keys(capturedJsonResponse);
+            logLine += ` :: {${keys.length > 0 ? keys.slice(0, 3).join(',') + '...' : ''}}`;
+          } else {
+            logLine += ` :: ${String(capturedJsonResponse).substring(0, 20)}`;
+          }
+        }
+
+        log(logLine);
       }
-
-      log(logLine);
-    }
-  });
+    });
+  }
 
   next();
 });
