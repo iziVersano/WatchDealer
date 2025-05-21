@@ -1,40 +1,41 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp, doublePrecision } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 // Users table
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   password: text("password"),
   googleId: text("google_id").unique(),
   role: text("role").notNull().default("dealer"), // dealer or admin
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
 // Watches table
-export const watches = pgTable("watches", {
-  id: serial("id").primaryKey(),
+export const watches = sqliteTable("watches", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   brand: text("brand").notNull(),
   model: text("model").notNull(),
   reference: text("reference").notNull(),
-  size: doublePrecision("size").notNull(), // in mm
+  size: real("size").notNull(), // in mm
   material: text("material").notNull(),
   price: integer("price").notNull(), // in cents
   imageUrl: text("image_url").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
 // Favorites table - junction table for users and their favorite watches
-export const favorites = pgTable("favorites", {
-  id: serial("id").primaryKey(),
+export const favorites = sqliteTable("favorites", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   watchId: integer("watch_id").notNull().references(() => watches.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
 // Relations
