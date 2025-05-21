@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useSelector } from 'react-redux';
 import { selectIsAdmin } from '../store/authSlice';
-import { selectFilteredWatches } from '../store/watchSlice';
 import { useToast } from '@/hooks/use-toast';
 import {
   Card,
@@ -24,12 +23,8 @@ import {
   Pie,
   Cell,
   Legend,
-  LineChart,
-  Line,
-  Area,
-  AreaChart,
 } from 'recharts';
-import { BarChart3, TrendingUp, PieChart as PieChartIcon, Users } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 
 // Mock data for the charts
 const salesData = [
@@ -60,11 +55,8 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 export default function AdminAnalyticsPage() {
   const [location, setLocation] = useLocation();
   const isAdmin = useSelector(selectIsAdmin);
-  const watches = useSelector(selectFilteredWatches);
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [materialData, setMaterialData] = useState<{name: string, value: number}[]>([]);
-  const [sizeData, setSizeData] = useState<{size: string, count: number}[]>([]);
 
   // Redirect if not admin
   useEffect(() => {
@@ -72,36 +64,6 @@ export default function AdminAnalyticsPage() {
       setLocation('/');
     }
   }, [isAdmin, setLocation]);
-
-  // Process watch data for analytics
-  useEffect(() => {
-    if (watches.length > 0) {
-      // Generate material distribution data
-      const materialCounts: Record<string, number> = {};
-      watches.forEach(watch => {
-        materialCounts[watch.material] = (materialCounts[watch.material] || 0) + 1;
-      });
-      
-      const materialChartData = Object.entries(materialCounts).map(([name, value]) => ({
-        name,
-        value: Math.round((value / watches.length) * 100)
-      }));
-      setMaterialData(materialChartData);
-
-      // Generate size distribution data
-      const sizeCounts: Record<string, number> = {};
-      watches.forEach(watch => {
-        const sizeKey = `${watch.size}mm`;
-        sizeCounts[sizeKey] = (sizeCounts[sizeKey] || 0) + 1;
-      });
-      
-      const sizeChartData = Object.entries(sizeCounts).map(([size, count]) => ({
-        size,
-        count
-      }));
-      setSizeData(sizeChartData);
-    }
-  }, [watches]);
 
   // Simulate loading data
   useEffect(() => {
@@ -127,16 +89,13 @@ export default function AdminAnalyticsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Total Sales Card */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
               Total Sales
             </CardTitle>
-            <div className="absolute top-3 right-3 text-neutral-400">
-              <TrendingUp size={16} />
-            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -144,7 +103,7 @@ export default function AdminAnalyticsPage() {
             ) : (
               <div className="text-2xl font-bold">$1,234,567</div>
             )}
-            <p className="text-xs text-emerald-500 dark:text-emerald-400">
+            <p className="text-xs text-muted-foreground">
               +14.2% from last month
             </p>
           </CardContent>
@@ -156,17 +115,14 @@ export default function AdminAnalyticsPage() {
             <CardTitle className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
               Active Listings
             </CardTitle>
-            <div className="absolute top-3 right-3 text-neutral-400">
-              <BarChart3 size={16} />
-            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
               <Skeleton className="h-8 w-16" />
             ) : (
-              <div className="text-2xl font-bold">{watches.length || 143}</div>
+              <div className="text-2xl font-bold">143</div>
             )}
-            <p className="text-xs text-emerald-500 dark:text-emerald-400">
+            <p className="text-xs text-muted-foreground">
               +4 new listings this week
             </p>
           </CardContent>
@@ -178,9 +134,6 @@ export default function AdminAnalyticsPage() {
             <CardTitle className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
               Avg. Order Value
             </CardTitle>
-            <div className="absolute top-3 right-3 text-neutral-400">
-              <PieChartIcon size={16} />
-            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -188,30 +141,8 @@ export default function AdminAnalyticsPage() {
             ) : (
               <div className="text-2xl font-bold">$26,325</div>
             )}
-            <p className="text-xs text-emerald-500 dark:text-emerald-400">
+            <p className="text-xs text-muted-foreground">
               +2.3% from last month
-            </p>
-          </CardContent>
-        </Card>
-        
-        {/* Acquisition Card */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              Customer Leads
-            </CardTitle>
-            <div className="absolute top-3 right-3 text-neutral-400">
-              <Users size={16} />
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              <div className="text-2xl font-bold">52</div>
-            )}
-            <p className="text-xs text-emerald-500 dark:text-emerald-400">
-              +8 new leads this week
             </p>
           </CardContent>
         </Card>
@@ -233,19 +164,13 @@ export default function AdminAnalyticsPage() {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={salesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#8884d8" stopOpacity={0.1}/>
-                    </linearGradient>
-                  </defs>
+                <BarChart data={salesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
                   <Tooltip formatter={(value) => [`$${value}`, 'Sales']} />
-                  <Area type="monotone" dataKey="sales" stroke="#8884d8" fillOpacity={1} fill="url(#salesGradient)" />
-                </AreaChart>
+                  <Bar dataKey="sales" fill="var(--chart-1)" />
+                </BarChart>
               </ResponsiveContainer>
             )}
           </CardContent>
@@ -289,45 +214,6 @@ export default function AdminAnalyticsPage() {
           </CardContent>
         </Card>
 
-        {/* Watch Case Size Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Watch Case Size Distribution</CardTitle>
-            <CardDescription>
-              Inventory breakdown by case diameter
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            {loading ? (
-              <div className="h-full w-full flex items-center justify-center">
-                <Skeleton className="h-full w-full" />
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={sizeData.length > 0 ? sizeData : [
-                    { size: '36mm', count: 12 },
-                    { size: '38mm', count: 18 },
-                    { size: '39mm', count: 22 },
-                    { size: '40mm', count: 35 },
-                    { size: '41mm', count: 26 },
-                    { size: '42mm', count: 15 },
-                    { size: '44mm', count: 8 },
-                    { size: '45mm', count: 4 },
-                  ]}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="size" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => [`${value}`, 'Watches']} />
-                  <Bar dataKey="count" fill="#00C49F" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Popular Price Ranges Chart */}
         <Card>
           <CardHeader>
@@ -358,7 +244,7 @@ export default function AdminAnalyticsPage() {
                   <XAxis type="number" />
                   <YAxis dataKey="range" type="category" />
                   <Tooltip formatter={(value) => [`${value}%`, 'Sales']} />
-                  <Bar dataKey="sales" fill="#FF8042" />
+                  <Bar dataKey="sales" fill="var(--chart-2)" />
                 </BarChart>
               </ResponsiveContainer>
             )}
