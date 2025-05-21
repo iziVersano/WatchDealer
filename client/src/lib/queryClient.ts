@@ -7,12 +7,18 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Get the API URL from environment variables
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  // Add the API_URL as prefix if the URL doesn't already include it
+  const fullUrl = url.startsWith('http') ? url : `${API_URL}${url}`;
+  
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
